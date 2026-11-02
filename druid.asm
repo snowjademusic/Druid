@@ -49,11 +49,19 @@ section .data
     MOVE_CURSOR_TXT db 0x1b, "[0;0H"
     MOVE_CURSOR_TXT_LEN equ $ - MOVE_CURSOR_TXT
 
+    HIDE_CURSOR_AND_INPUT_TXT db 0x1b, "[?25l[8m"
+    HIDE_CURSOR_AND_INPUT_TXT_LEN equ $ - HIDE_CURSOR_AND_INPUT_TXT
+
     STARTER_TXT db "[5mplease press enter to start the sequencer[0m", 10
     STARTER_TXT_LEN equ $ - STARTER_TXT
+
+    ALT_BUFFER_TXT db 0x1b, "[?1049h", 0x1b, "[H"
+    ALT_BUFFER_TXT_LEN equ $ - ALT_BUFFER_TXT
+
+    RETURN_TO_TERMINAL db 0x1b, "[?1049l"
+    RETURN_TO_TERMINAL_LEN equ $ - RETURN_TO_TERMINAL
     
 section .bss
-    section .bss
     ; struct winsize {
     ;     unsigned short ws_row;    ; 2 bytes
     ;     unsigned short ws_col;    ; 2 bytes
@@ -62,19 +70,22 @@ section .bss
     ; };
     winsize resw 4
 
+    trash resb 1
+
 section .text
 
     global _start
 
 _start:
     
-    call clear_terminal
-
+    ;call clear_terminal
+    call enter_alt_screen
+    call move_cursor_0_0
     call print_druid_ascii
+    call hide_cursor
     call wait_for_return
 
-    call clear_terminal
-
+    call return_to_terminal
     call sys_exit
 
 sys_exit:
@@ -89,7 +100,7 @@ print_druid_ascii:
     shr r8w, 1                      ; divide by 2
     shr r9w, 1
     sub r8w, 3                      ; shift cursor upwards, so the middle of text is in the middle
-    sub r9w, 20                     ; shift cursor left
+    sub r9w, 20                     ; shift cursor left by half the length of a textstring
 
     .move_down:
     call move_cursor_down
@@ -165,6 +176,12 @@ clear_terminal:
     call print
     ret
 
+hide_cursor:
+    mov rsi, HIDE_CURSOR_AND_INPUT_TXT
+    mov rdx, HIDE_CURSOR_AND_INPUT_TXT_LEN
+    call print
+    ret
+
 move_cursor_0_0:
     mov rsi, MOVE_CURSOR_0_0_TXT
     mov rdx, MOVE_CURSOR_0_0_TXT_LEN
@@ -183,12 +200,17 @@ move_cursor_right:
     call print
     ret
 
+; Function to print
+; Arguments:
+;   rsi - what to write (start memory location)
+;   rdx - how many bytes to write 
 print:
     mov rax, SYS_WRITE
     mov rdi, 1                          ; FileDescriptor
     syscall
     ret
 
+; Returns the window size of current Terminal in location winsize
 get_window_size:
     mov rax, SYS_IOCTL
     mov rdi, 1                          ; FileDesriptor
@@ -232,6 +254,18 @@ wait_for_return:
     mov rax, 0
     mov rdi, 0
     mov rsi, 0
-    mov rdx, 1
+    mov rdx, 512
     syscall
+    ret
+
+enter_alt_screen:
+    mov rsi, ALT_BUFFER_TXT
+    mov rdx, ALT_BUFFER_TXT_LEN
+    call print
+    ret
+
+return_to_terminal:
+    mov rsi, RETURN_TO_TERMINAL
+    mov rdx, RETURN_TO_TERMINAL_LEN
+    call print
     ret
