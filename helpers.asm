@@ -2,7 +2,8 @@ section .text
 
 global _start
 
-print_num:
+
+write_num:
     mov rbx, 10
     lea rsi, [rel buffer + 31] ; complains about absulute value? use rel?
     mov [rsi], 0x20     ; add a space after the number

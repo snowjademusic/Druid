@@ -46,9 +46,6 @@ section .data
     MOVE_CURSOR_DOWN db 0x1b, "[B"
     MOVE_CURSOR_DOWN_LEN equ $ - MOVE_CURSOR_DOWN
 
-    MOVE_CURSOR_TXT db 0x1b, "[0;0H"
-    MOVE_CURSOR_TXT_LEN equ $ - MOVE_CURSOR_TXT
-
     HIDE_CURSOR_AND_INPUT_TXT db 0x1b, "[?25l[8m"
     HIDE_CURSOR_AND_INPUT_TXT_LEN equ $ - HIDE_CURSOR_AND_INPUT_TXT
 
@@ -58,7 +55,7 @@ section .data
     ALT_BUFFER_TXT db 0x1b, "[?1049h", 0x1b, "[H"
     ALT_BUFFER_TXT_LEN equ $ - ALT_BUFFER_TXT
 
-    RETURN_TO_TERMINAL db 0x1b, "[?1049l"
+    RETURN_TO_TERMINAL db 0x1b, "[?1049l", 0x1b, "[0m"
     RETURN_TO_TERMINAL_LEN equ $ - RETURN_TO_TERMINAL
     
 section .bss
