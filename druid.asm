@@ -3,7 +3,7 @@
 
 default rel
 
-section .data
+section .rodata
     SYS_EXIT    equ 60
     SYS_WRITE   equ 1
     SYS_IOCTL   equ 16
@@ -12,29 +12,40 @@ section .data
     Terminal_IOC_Set_WINSZ  equ 0x5414
 
 
-
-    DRUID_ASCIIART_1 db "[0;34m▀███▄[0;90m   [0;37m [0;34m█▄█▀▀[0;94;44m▒[0;93;44m░[0;90m [0;37m [0;90m   [0;34m▄[0;90m     [0;37m [0;90m [0;34m▄▄[0;37m [0;34m▀███▄[0;90m   [0m", 10
+    DRUID_ASCIIART_1 db "[0;34m▀███▄[0;90m   [0;37m [0;34m█▄█▀▀[0;94;44m▒[0;93;44m░[0;90m [0;37m [0;90m   [0;34m▄[0;90m     [0;37m [0;90m [0;34m▄▄[0;37m [0;34m▀███▄[0;90m   [0m"
     DRUID_ASCIIART_1_LEN equ $ - DRUID_ASCIIART_1
 
-    DRUID_ASCIIART_2 db "[0;34m▀[0;90m [0;34m▀[0;90m [0;34m▀█▄[0;90m [0;37m [0;90m [0;34m█[0;90m    [0;94;44m▒[0;34m█[0;37m [0;90m [0;34m▄[0;94;44m░[0;90m    [0;34m▄[0;90m [0;37m [0;90m [0;34m▄▄[0;37m [0;34m▀[0;90m [0;34m▀[0;90m [0;34m▀█▄[0;90m [0m", 10
+    DRUID_ASCIIART_2 db "[0;34m▀[0;90m [0;34m▀[0;90m [0;34m▀█▄[0;90m [0;37m [0;90m [0;34m█[0;90m    [0;94;44m▒[0;34m█[0;37m [0;90m [0;34m▄[0;94;44m░[0;90m    [0;34m▄[0;90m [0;37m [0;90m [0;34m▄▄[0;37m [0;34m▀[0;90m [0;34m▀[0;90m [0;34m▀█▄[0;90m [0m"
     DRUID_ASCIIART_2_LEN equ $ - DRUID_ASCIIART_2
 
-    DRUID_ASCIIART_3 db "[0;90m [0;34m░[0;90m   [0;34m▐[0;93;44m░[0;94;44m▒[0;37m [0;34m██[0;90m   [0;34m▄█[0;90m [0;37m [0;34m█[0;94;44m▓[0;34m▌[0;90m    [0;34m█▌[0;37m [0;34m▐[0;93;44m░[0;94;44m▒[0;37m [0;90m [0;34m░[0;90m   [0;34m▐[0;93;44m░[0;94;44m▒[0m", 10
+    DRUID_ASCIIART_3 db "[0;90m [0;34m░[0;90m   [0;34m▐[0;93;44m░[0;94;44m▒[0;37m [0;34m██[0;90m   [0;34m▄█[0;90m [0;37m [0;34m█[0;94;44m▓[0;34m▌[0;90m    [0;34m█▌[0;37m [0;34m▐[0;93;44m░[0;94;44m▒[0;37m [0;90m [0;34m░[0;90m   [0;34m▐[0;93;44m░[0;94;44m▒[0m"
     DRUID_ASCIIART_3_LEN equ $ - DRUID_ASCIIART_3
 
-    DRUID_ASCIIART_4 db "[0;90m [0;34m▓░[0;90m   [0;94;44m▒[0;34m█[0;37m [0;34m█[0;94;44m░[0;34m█▄▄▀[0;90m  [0;37m [0;94;44m▒░[0;90m     [0;34m▐█[0;37m [0;34m▐[0;94;44m▒[0;34m█[0;37m [0;90m [0;34m▓░[0;90m   [0;94;44m▒[0;34m█[0m", 10
+    DRUID_ASCIIART_4 db "[0;90m [0;34m▓░[0;90m   [0;94;44m▒[0;34m█[0;37m [0;34m█[0;94;44m░[0;34m█▄▄▀[0;90m  [0;37m [0;94;44m▒░[0;90m     [0;34m▐█[0;37m [0;34m▐[0;94;44m▒[0;34m█[0;37m [0;90m [0;34m▓░[0;90m   [0;94;44m▒[0;34m█[0m"
     DRUID_ASCIIART_4_LEN equ $ - DRUID_ASCIIART_4
 
-    DRUID_ASCIIART_5 db "[0;90m [0;34m█░[0;90m  [0;34m▌▓█[0;37m [0;34m█[0;94;44m░[0;90m [0;34m▀█▄[0;90m  [0;37m [0;94;44m░▒[0;90m     [0;34m█▌[0;37m [0;34m▐▓█[0;37m [0;90m [0;34m█░[0;90m  [0;34m▌▓█[0m", 10
+    DRUID_ASCIIART_5 db "[0;90m [0;34m█░[0;90m  [0;34m▌▓█[0;37m [0;34m█[0;94;44m░[0;90m [0;34m▀█▄[0;90m  [0;37m [0;94;44m░▒[0;90m     [0;34m█▌[0;37m [0;34m▐▓█[0;37m [0;90m [0;34m█░[0;90m  [0;34m▌▓█[0m"
     DRUID_ASCIIART_5_LEN equ $ - DRUID_ASCIIART_5
 
-    DRUID_ASCIIART_6 db "[0;34m▀[0;94;44m░[0;34m▓[0;90m [0;34m▄█▀[0;90m [0;37m [0;34m█[0;94;44m▒[0;90m   [0;34m██▄[0;37m [0;90m [0;34m▀▄[0;90m  [0;34m▄[0;94;44m░[0;34m█[0;90m [0;37m [0;90m [0;34m█▓[0;37m [0;34m▀[0;94;44m░[0;34m▓[0;90m [0;34m▄█▀[0;90m [0m", 10
+    DRUID_ASCIIART_6 db "[0;34m▀[0;94;44m░[0;34m▓[0;90m [0;34m▄█▀[0;90m [0;37m [0;34m█[0;94;44m▒[0;90m   [0;34m██▄[0;37m [0;90m [0;34m▀▄[0;90m  [0;34m▄[0;94;44m░[0;34m█[0;90m [0;37m [0;90m [0;34m█▓[0;37m [0;34m▀[0;94;44m░[0;34m▓[0;90m [0;34m▄█▀[0;90m [0m"
     DRUID_ASCIIART_6_LEN equ $ - DRUID_ASCIIART_6
 
-    DRUID_ASCIIART_7 db "[0;90m [0;34m▀▀▀▀[0;90m   [0;37m [0;34m▀[0;90m     [0;34m▀[0;90m [0;37m [0;90m   [0;34m▀▀▀▀[0;90m  [0;37m [0;90m [0;34m▀[0;90m [0;37m [0;90m [0;34m▀▀▀▀[0;90m   [0m", 10, 10
+    DRUID_ASCIIART_7 db "[0;90m [0;34m▀▀▀▀[0;90m   [0;37m [0;34m▀[0;90m     [0;34m▀[0;90m [0;37m [0;90m   [0;34m▀▀▀▀[0;90m  [0;37m [0;90m [0;34m▀[0;90m [0;37m [0;90m [0;34m▀▀▀▀[0;90m   [0m"
     DRUID_ASCIIART_7_LEN equ $ - DRUID_ASCIIART_7
 
-    CLEAR_TERMINAL db 0x1b, "[2J" ,0x1b, "[3J"
+    ART_TABLE:
+        dq DRUID_ASCIIART_1, DRUID_ASCIIART_1_LEN
+        dq DRUID_ASCIIART_2, DRUID_ASCIIART_2_LEN
+        dq DRUID_ASCIIART_3, DRUID_ASCIIART_3_LEN
+        dq DRUID_ASCIIART_4, DRUID_ASCIIART_4_LEN
+        dq DRUID_ASCIIART_5, DRUID_ASCIIART_5_LEN
+        dq DRUID_ASCIIART_6, DRUID_ASCIIART_6_LEN
+        dq DRUID_ASCIIART_7, DRUID_ASCIIART_7_LEN
+
+    DRUID_ART_WIDTH equ 40
+    DRUID_ART_HEIGHT equ 7
+
+    CLEAR_TERMINAL db 0x1b, "[2J"
     CLEAR_TERMINAL_LEN equ $ - CLEAR_TERMINAL
 
     MOVE_CURSOR_0_0_TXT db 0x1b, "[0;0H"
@@ -49,14 +60,20 @@ section .data
     HIDE_CURSOR_AND_INPUT_TXT db 0x1b, "[?25l[8m"
     HIDE_CURSOR_AND_INPUT_TXT_LEN equ $ - HIDE_CURSOR_AND_INPUT_TXT
 
-    STARTER_TXT db "[5mplease press enter to start the sequencer[0m", 10
+    STARTER_TXT db "[5mplease press enter to start the sequencer[0m"
     STARTER_TXT_LEN equ $ - STARTER_TXT
+
+    STARTER_TXT_WIDTH equ 41
 
     ALT_BUFFER_TXT db 0x1b, "[?1049h", 0x1b, "[H"
     ALT_BUFFER_TXT_LEN equ $ - ALT_BUFFER_TXT
 
     RETURN_TO_TERMINAL db 0x1b, "[?1049l", 0x1b, "[0m"
     RETURN_TO_TERMINAL_LEN equ $ - RETURN_TO_TERMINAL
+
+    ANSI_ESCAPE_OPEN db 0x1b, "["
+    SEMICOLON db ";"
+    ANSI_CURSOR_END db "H"
     
 section .bss
     ; struct winsize {
@@ -67,7 +84,10 @@ section .bss
     ; };
     winsize resw 4
 
-    trash resb 1
+    int_to_str resb 10
+
+    framebuffer resb 30000          ; biggest Terminal size i tested on was 400x60, so I added some safty margin if I ever want to print to the whole screen
+    framecursor resq 1              ;should hold the current address of where to write next
 
 section .text
 
@@ -75,9 +95,7 @@ section .text
 
 _start:
     
-    ;call clear_terminal
     call enter_alt_screen
-    call move_cursor_0_0
     call print_druid_ascii
     call hide_cursor
     call wait_for_return
@@ -85,86 +103,126 @@ _start:
     call return_to_terminal
     call sys_exit
 
-sys_exit:
-    mov rax, SYS_EXIT
-    mov rdi, 0
-    syscall
+
+%include "helpers.asm"
+
+
+render_frame:
+    lea rsi, [framebuffer]
+    mov rax, [framecursor]
+    sub rax, rsi
+    mov rdx, rax
+    call print
+    ret
 
 print_druid_ascii:
+    push rbp
+    push r12
+    push r13
+    push r14
+    push r15
     call get_window_size
-    movzx r8w, word [winsize]       ; r8w  = ws_row (height)
-    movzx r9w, word [winsize + 2]   ; r9w  = ws_col (width)
-    shr r8w, 1                      ; divide by 2
-    shr r9w, 1
-    sub r8w, 3                      ; shift cursor upwards, so the middle of text is in the middle
-    sub r9w, 20                     ; shift cursor left by half the length of a textstring
+    movzx r14d, word [winsize]       ; r8w  = ws_row (height)
+    movzx r15d, word [winsize + 2]   ; r9w  = ws_col (width)
+    sub r14w, DRUID_ART_HEIGHT
+    sub r15w, DRUID_ART_WIDTH
+    shr r14w, 1                      ; divide by 2
+    shr r15w, 1
+    lea rax, [framebuffer]          ; move mem location of buffer
+    mov [framecursor], rax          ; into framecursor
 
-    .move_down:
-    call move_cursor_down
-    dec r8w
-    jnz .move_down
+    mov rdi, r14
+    mov rsi, r15
+    call append_position
 
-    movzx di, r9w
-    call move_right
+    mov r13, DRUID_ART_HEIGHT           ;load how long the table is to loop through
+    lea rbp, [ART_TABLE]
+    xor r12, r12
 
-    mov rsi, DRUID_ASCIIART_1
-    mov rdx, DRUID_ASCIIART_1_LEN
-    call print
+.druid_art_loop:
+    mov rdi, [rbp]
+    mov rsi, [rbp + 8]
+    call append_to_frame_buffer
+    
+    inc r14
+    mov rdi, r14
+    mov rsi, r15
+    call append_position
 
-    movzx di, r9w
-    call move_right
+    inc r12
+    add rbp, 16
+    dec r13
+    jnz .druid_art_loop
 
-    mov rsi, DRUID_ASCIIART_2
-    mov rdx, DRUID_ASCIIART_2_LEN
-    call print
+    inc r14
+    dec r15
+    mov rdi, r14
+    mov rsi, r15
+    call append_position
 
-    movzx di, r9w
-    call move_right
+    mov rdi, STARTER_TXT
+    mov rsi, STARTER_TXT_LEN
+    call append_to_frame_buffer
 
-    mov rsi, DRUID_ASCIIART_3
-    mov rdx, DRUID_ASCIIART_3_LEN
-    call print
+    call render_frame
 
-    movzx di, r9w
-    call move_right
+    pop r15
+    pop r14
+    pop r13
+    pop r12
+    pop rbp
+    ret
 
-    mov rsi, DRUID_ASCIIART_4
-    mov rdx, DRUID_ASCIIART_4_LEN
-    call print
 
-    movzx di, r9w
-    call move_right
+;append_position
+;appends next cursor position to the framebuffer
+;ESC[{row}:{col}H
+;   Args:
+;       __rdi: row
+;       __rsi: col
+append_position:
+    mov rcx, [framecursor]
+    mov ax, [ANSI_ESCAPE_OPEN]      ;add the begin sequence ESC[
+    mov [rcx], ax
+    add rcx, 2
 
-    mov rsi, DRUID_ASCIIART_5
-    mov rdx, DRUID_ASCIIART_5_LEN
-    call print
+    ;call write_init_as_str for row
+    push rsi
+    mov rsi, rcx
+    call write_int_as_str       ; edi already holds row, returns how many digits written in rax
+    add rcx, rax
 
-    movzx di, r9w
-    call move_right
+    mov r9b, [SEMICOLON]        ; add the semicolon in the position string
+    mov [rcx], r9b
+    inc rcx
 
-    mov rsi, DRUID_ASCIIART_6
-    mov rdx, DRUID_ASCIIART_6_LEN
-    call print
+    pop rdi                     ; edi holds col,
+    mov rsi, rcx
+    call write_int_as_str       ; returns how many digits written in rax
+    add rcx, rax
 
-    movzx di, r9w
-    call move_right
+    mov r9b, [ANSI_CURSOR_END]
+    mov [rcx], r9b
+    inc rcx
 
-    mov rsi, DRUID_ASCIIART_7
-    mov rdx, DRUID_ASCIIART_7_LEN
-    call print
+    mov [framecursor], rcx
 
-    movzx di, r9w
-    sub di, 1
-    call move_right
+    ret
 
-    mov rsi, STARTER_TXT
-    mov rdx, STARTER_TXT_LEN
-    call print
-
-    movzx di, r9w
-    add di, 20
-    call move_right
-
+;args:
+;   __rdi: location of what to write
+;   __rsi: how long to write for
+append_to_frame_buffer:
+    mov rax, [framecursor]
+    .appender:
+    mov r9b, [rdi]
+    mov [rax], r9b
+    inc rdi
+    inc rax
+    dec rsi
+    jnz .appender
+    
+    mov [framecursor], rax
     ret
 
 clear_terminal:
@@ -197,72 +255,11 @@ move_cursor_right:
     call print
     ret
 
-; Function to print
-; Arguments:
-;   rsi - what to write (start memory location)
-;   rdx - how many bytes to write 
-print:
-    mov rax, SYS_WRITE
-    mov rdi, 1                          ; FileDescriptor
-    syscall
-    ret
-
-; Returns the window size of current Terminal in location winsize
+; Returns the window size of current Terminal in [winsize]
 get_window_size:
     mov rax, SYS_IOCTL
     mov rdi, 1                          ; FileDesriptor
     mov rsi, Terminal_IOC_Get_WINSZ
     mov rdx, winsize
     syscall
-    ret
-
-set_cursor_to_middle:
-    call get_window_size
-    movzx r8w, word [winsize]     ; r8w  = ws_row (height)
-    movzx r9w, word [winsize + 2] ; r9w  = ws_col (width)
-    shr r8w, 1
-    shr r9w, 1
-
-.move_down:
-    call move_cursor_down
-    dec r8w
-    jnz .move_down
-
-.move_right:
-    call move_cursor_right
-    dec r9w
-    jnz .move_right
-
-    ret
-
-move_right:
-    push r9w
-    movzx r9w, di
-
-.move_loop:
-    call move_cursor_right
-    dec r9w
-    jnz .move_loop
-
-    pop r9w
-    ret
-
-wait_for_return:
-    mov rax, 0
-    mov rdi, 0
-    mov rsi, 0
-    mov rdx, 512
-    syscall
-    ret
-
-enter_alt_screen:
-    mov rsi, ALT_BUFFER_TXT
-    mov rdx, ALT_BUFFER_TXT_LEN
-    call print
-    ret
-
-return_to_terminal:
-    mov rsi, RETURN_TO_TERMINAL
-    mov rdx, RETURN_TO_TERMINAL_LEN
-    call print
     ret

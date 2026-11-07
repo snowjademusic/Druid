@@ -5,12 +5,14 @@
     "version": "0.2.0",
     "configurations": [
         {
-            "name": "Launch",
+            "name": "Launch ASM Debugger",
             "type": "lldb",
             "request": "launch",
             "program": "${workspaceRoot}/druid",
             "args": [],
-            "cwd": "${workspaceRoot}"
+            "cwd": "${workspaceRoot}",
+            "sourceMap": { ".": "${workspaceFolder}" },
+            "stopOnEntry": true
         }
     ]
 }
