@@ -12,6 +12,8 @@
 ; Argument 5	*r8*	Fifth parameter
 ; Argument 6	*r9*	Sixth parameter
 
+; DOCS OVER::
+
 ;write_int_as_str 
 ;   Args: 
 ;       __edi: value to convert, 
@@ -62,6 +64,9 @@ print:
 wait_for_return:
     mov rax, 0
     mov rdi, 0
+
+    sub rsp, 8
+    ;TODO READ INTO STACK
     mov rsi, 0
     mov rdx, 1
     syscall
@@ -70,17 +75,17 @@ wait_for_return:
 ;enter_alt_screen
 ;   doesn't take args
 enter_alt_screen:
-    mov rsi, ALT_BUFFER_TXT
-    mov rdx, ALT_BUFFER_TXT_LEN
-    call print
+    mov rdi, ALT_BUFFER_TXT
+    mov rsi, ALT_BUFFER_TXT_LEN
+    call append_to_frame_buffer
     ret
 
 ;return_to_terminal
 ;   returns to original terminal
 return_to_terminal:
-    mov rsi, RETURN_TO_TERMINAL
-    mov rdx, RETURN_TO_TERMINAL_LEN
-    call print
+    mov rdi, RETURN_TO_TERMINAL
+    mov rsi, RETURN_TO_TERMINAL_LEN
+    call append_to_frame_buffer
     ret
 
 ;sys_exit:

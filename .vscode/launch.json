@@ -12,7 +12,7 @@
             "args": [],
             "cwd": "${workspaceRoot}",
             "sourceMap": { ".": "${workspaceFolder}" },
-            "stopOnEntry": true
+            //"stopOnEntry": true
         }
     ]
 }
