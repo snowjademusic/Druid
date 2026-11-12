@@ -61,15 +61,31 @@ print:
     ret
 
 
+; leverage raw mode to read 1 byte into the stack and from stack into xxx
 wait_for_return:
-    mov rax, 0
-    mov rdi, 0
 
-    sub rsp, 8
-    ;TODO READ INTO STACK
-    mov rsi, 0
-    mov rdx, 1
+.loop_until_q_or_interrupt:
+    mov rax, 0              ; syscall read
+    mov rdi, 0              ; Filedescriptor read
+    push 0                  ; writes 8 bytes worth of 0s to the stack (reserving space)
+    mov rsi, rsp            ; write input to stack (terminal should be in raw mode atp)
+    mov rdx, 1              ; read only 1 byte
     syscall
+
+    cmp rax, 0              ; error occured?
+    jl error_out
+
+    movzx rax, byte [rsp]       ; write the revieved byte into rax lowest byte
+
+    pop rdi                     ; return the stack pointer back
+    cmp rax, QUIT
+    jz .quit
+
+    cmp rax, KEYBOARD_INTERRUPT
+    jz .quit
+
+    jmp .loop_until_q_or_interrupt
+.quit:
     ret
 
 ;enter_alt_screen

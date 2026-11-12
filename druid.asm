@@ -17,6 +17,9 @@ section .rodata
     ICANON equ 0x2
     ECHO equ 0x8
 
+    QUIT equ "q"
+    KEYBOARD_INTERRUPT equ 0x03
+
     C_LFLAG_MASK equ ~(ISIG|ICANON|ECHO)        ; | does bitwise or, ~ is to negate the whole expression
 
     VTIME_IDX equ 22
@@ -67,8 +70,8 @@ section .rodata
     MOVE_CURSOR_DOWN db 0x1b, "[B"
     MOVE_CURSOR_DOWN_LEN equ $ - MOVE_CURSOR_DOWN
 
-    HIDE_CURSOR_AND_INPUT_TXT db 0x1b, "[?25l[8m"
-    HIDE_CURSOR_AND_INPUT_TXT_LEN equ $ - HIDE_CURSOR_AND_INPUT_TXT
+    HIDE_CURSOR db 0x1b, "[?25l"
+    HIDE_CURSOR_LEN equ $ - HIDE_CURSOR
 
     STARTER_TXT db "[5mplease press enter to start the sequencer[0m"
     STARTER_TXT_LEN equ $ - STARTER_TXT
@@ -125,8 +128,8 @@ _start:
     call enter_alt_screen
     call raw_mode_Termios
     call print_druid_ascii
+    call hide_cursor
     call render_frame
-    ; call hide_cursor
     call wait_for_return
 
 
@@ -271,9 +274,9 @@ append_to_frame_buffer:
     ret
 
 hide_cursor:
-    mov rsi, HIDE_CURSOR_AND_INPUT_TXT
-    mov rdx, HIDE_CURSOR_AND_INPUT_TXT_LEN
-    call print
+    mov rdi, HIDE_CURSOR
+    mov rsi, HIDE_CURSOR_LEN
+    call append_to_frame_buffer
     ret
 
 ; Returns the window size of current Terminal in [winsize]
