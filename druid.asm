@@ -17,13 +17,13 @@ section .rodata
     ICANON equ 0x2
     ECHO equ 0x8
 
-    QUIT equ "q"
+    QUIT equ 0xa
     KEYBOARD_INTERRUPT equ 0x03
 
     C_LFLAG_MASK equ ~(ISIG|ICANON|ECHO)        ; | does bitwise or, ~ is to negate the whole expression
 
-    VTIME_IDX equ 22
-    VMIN_IDX equ 23
+    VTIME_IDX equ 5
+    VMIN_IDX equ 6
 
     DRUID_ASCIIART_1 db "[0;34m▀███▄[0;90m   [0;37m [0;34m█▄█▀▀[0;94;44m▒[0;93;44m░[0;90m [0;37m [0;90m   [0;34m▄[0;90m     [0;37m [0;90m [0;34m▄▄[0;37m [0;34m▀███▄[0;90m   [0m"
     DRUID_ASCIIART_1_LEN equ $ - DRUID_ASCIIART_1
@@ -149,6 +149,11 @@ render_frame:
     sub rax, rsi
     mov rdx, rax
     call print
+
+    ;reset framecursor
+    lea rax, [framebuffer]              ; move mem location of framebuffer
+    mov [framecursor], rax              ; into framecursor
+
     ret
 
 print_druid_ascii:
@@ -334,7 +339,7 @@ set_Termios_state:
     syscall
 
     cmp rax, 0 
-    jb error_out
+    jl error_out
 
     ret 
 

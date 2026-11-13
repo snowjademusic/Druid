@@ -73,7 +73,7 @@ wait_for_return:
     syscall
 
     cmp rax, 0              ; error occured?
-    jl error_out
+    jle error_out
 
     movzx rax, byte [rsp]       ; write the revieved byte into rax lowest byte
 
