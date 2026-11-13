@@ -78,7 +78,7 @@ wait_for_return:
     movzx rax, byte [rsp]       ; write the revieved byte into rax lowest byte
 
     pop rdi                     ; return the stack pointer back
-    cmp rax, QUIT
+    cmp rax, ENTER_KEY
     jz .quit
 
     cmp rax, KEYBOARD_INTERRUPT

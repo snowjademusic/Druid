@@ -13,14 +13,19 @@ section .rodata
     TCGETS equ 0x5401
     TCSETS equ 0x5402
 
+    ICRNL equ 0x100
+    IXON equ 0x400
+
+    C_IFLAG_MASK equ ~(ICRNL|IXON)
+
     ISIG equ 0x1
     ICANON equ 0x2
     ECHO equ 0x8
 
-    QUIT equ 0xa
-    KEYBOARD_INTERRUPT equ 0x03
-
     C_LFLAG_MASK equ ~(ISIG|ICANON|ECHO)        ; | does bitwise or, ~ is to negate the whole expression
+
+    ENTER_KEY equ 0xd
+    KEYBOARD_INTERRUPT equ 0x03
 
     VTIME_IDX equ 5
     VMIN_IDX equ 6
@@ -298,6 +303,11 @@ get_window_size:
 
 ; Exit with error code
 error_out:
+        ;TODO - keep track of what what program state we're in, how much cleanup needs to happen before exit!
+    ; clean up
+    call restore_Termios
+    call return_to_terminal
+    call render_frame
     mov rax, SYS_EXIT
     mov rdi, 1
     syscall
@@ -351,6 +361,7 @@ raw_mode_Termios:
 
     call get_Termios_state
 
+    and dword [raw_termios], C_IFLAG_MASK
     and dword [raw_termios + 12], C_LFLAG_MASK              ; AND with our mask, so only the flags we want to affect are turned to 0
     mov byte [raw_termios + 17 + VMIN_IDX], 1                  ; set VMIN to 1 for returning after 1 byte
     mov byte [raw_termios + 17 + VTIME_IDX], 0                 ; set VTIME to 0 to always accept input
