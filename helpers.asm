@@ -70,7 +70,6 @@ print:
 ;       reads one byte of keaboard input (one key)
 read_key:
 
-.loop_until_q_or_interrupt:
     mov rax, 0              ; syscall read
     mov rdi, 0              ; Filedescriptor read
     push 0                  ; writes 8 bytes worth of 0s to the stack (reserving space)
@@ -81,18 +80,10 @@ read_key:
     cmp rax, 0              ; error occured?
     jle error_out
 
-    ; movzx rax, byte [rsp]       ; write the revieved byte into rax lowest byte
+    ; movzx rax, byte [rsp] ; write the revieved byte into rax lowest byte
 
-    pop rax                     ; return the stack pointer back
-    cmp rax, ENTER_KEY
-    jz .quit
-
-    cmp rax, KEYBOARD_INTERRUPT
-    jz .quit
-
-    jmp .loop_until_q_or_interrupt
-.quit:
-    ret
+    pop rax                 ; revert the stack pointer back
+    ret                     ; return with byte loaded in rax 
 
 ;enter_alt_screen
 ;   doesn't take args

@@ -63,6 +63,53 @@ section .rodata
     DRUID_ART_WIDTH equ 40
     DRUID_ART_HEIGHT equ 7
 
+%define TopLeft  0xE2, 0x95, 0xAD           ; ╭
+%define TopRight  0xE2, 0x95, 0xAE          ; ╮
+%define BottomRight  0xE2, 0x95, 0xAF       ; ╯
+%define BottomLeft  0xE2, 0x95, 0xB0        ; ╰
+%define Horizontal  0xE2, 0x94, 0x80        ; ─
+%define Vertical  0xE2, 0x94, 0x82          ; │
+%define TopSeparator  0xE2, 0x94, 0xAC      ; ┬
+%define BottomSeparator  0xE2, 0x94, 0xB4   ; ┴
+
+    ; Top border: ╭────────┬────────┬────────┬────────╮
+    TOP_BORDER:
+        db TopLeft
+        times 8 db Horizontal
+        db TopSeparator
+        times 8 db Horizontal
+        db TopSeparator
+        times 8 db Horizontal
+        db TopSeparator
+        times 8 db Horizontal
+        db TopRight, 0x1b, "[0m"
+    TOP_BORDER_LEN equ $ - TOP_BORDER
+
+    MIDDLE_PART:
+        db Vertical
+        db "        "
+        db Vertical
+        db "        "
+        db Vertical
+        db "        "
+        db Vertical
+        db "        "
+        db Vertical
+    MIDDLE_PART_LEN equ $ - MIDDLE_PART
+
+    ; Bottom border: ╰────────┴────────┴────────┴────────╯
+    BOT_BORDER:
+        db BottomLeft
+        times 8 db Horizontal
+        db BottomSeparator
+        times 8 db Horizontal
+        db BottomSeparator
+        times 8 db Horizontal
+        db BottomSeparator
+        times 8 db Horizontal
+        db BottomRight, 0x1b, "[0m"
+    BOT_BORDER_LEN equ $ - BOT_BORDER
+
     CLEAR_TERMINAL db 0x1b, "[2J"
     CLEAR_TERMINAL_LEN equ $ - CLEAR_TERMINAL
 
@@ -75,8 +122,11 @@ section .rodata
     MOVE_CURSOR_DOWN db 0x1b, "[B"
     MOVE_CURSOR_DOWN_LEN equ $ - MOVE_CURSOR_DOWN
 
-    HIDE_CURSOR db 0x1b, "[?25l"
-    HIDE_CURSOR_LEN equ $ - HIDE_CURSOR
+    HIDE_CURSOR_TXT db 0x1b, "[?25l"
+    HIDE_CURSOR_TXT_LEN equ $ - HIDE_CURSOR_TXT
+
+    SHOW_CURSOR_TXT db 0x1b, "[?25h"
+    SHOW_CURSOR_TXT_LEN equ $ - SHOW_CURSOR_TXT
 
     STARTER_TXT db "[5mplease press enter to start the sequencer[0m"
     STARTER_TXT_LEN equ $ - STARTER_TXT
@@ -118,6 +168,10 @@ section .bss
     orig_termios resb 36
     TERMIOS_LEN equ 36
 
+    kick_state resb 16
+    snare_state resb 16
+    hat_state resb 16
+    percussion_state resb 16
 
     framebuffer resb 30000          ; biggest Terminal size i tested on was 400x60, so I added some safty margin if I ever want to print to the whole screen
     framecursor resq 1              ;should hold the current address of where to write next
@@ -138,22 +192,24 @@ _start:
     mov [framecursor], rax              ; into framecursor
     call enter_alt_screen
     call raw_mode_Termios
-    call print_druid_ascii
+    call print_title_screen             ; TODO add info on programm usage below the art maybe? only once core features are implemented
+    call render_frame
+    call key_handler_title_screen       ; continues on enter; exits upon ctrl-c
+    call print_sequencer_frame
 
 .main_loop:
     call render_frame
-    call read_key
+    call key_handler
+    jmp .main_loop
 
 
-    ; Tear down 
-    call restore_Termios                ; return to normal input mode
-    call return_to_terminal             ; return to Terminal we called from
-    call render_frame                   ; final render of our escape codes
-    call sys_exit                       ; clean exit with code 0
+
+; ====================================================================
+; ==============================[END]=================================
+; ====================================================================
 
 
 %include "helpers.asm"
-
 
 render_frame:
     lea rsi, [framebuffer]
@@ -168,7 +224,7 @@ render_frame:
 
     ret
 
-print_druid_ascii:
+print_title_screen:
     push rbp
     push r13
     push r14
@@ -292,8 +348,14 @@ append_to_frame_buffer:
     ret
 
 hide_cursor:
-    mov rdi, HIDE_CURSOR
-    mov rsi, HIDE_CURSOR_LEN
+    mov rdi, HIDE_CURSOR_TXT
+    mov rsi, HIDE_CURSOR_TXT_LEN
+    call append_to_frame_buffer
+    ret
+
+show_cursor:
+    mov rdi, SHOW_CURSOR_TXT
+    mov rsi, SHOW_CURSOR_TXT_LEN
     call append_to_frame_buffer
     ret
 
@@ -386,3 +448,88 @@ restore_Termios:
     call set_Termios_state
     ret
 
+
+; key_handler
+;   Args:
+;       __rdi: none
+key_handler:
+
+    call read_key                       ; returns read byte in rax
+    mov rdi, rax
+
+    cmp rax, KEYBOARD_INTERRUPT
+    jz tear_down
+    ret
+
+key_handler_title_screen:
+
+.wait_for_valid_input:
+
+    call read_key                       ; returns read byte in rax
+
+    cmp rax, KEYBOARD_INTERRUPT
+    jz tear_down
+
+    cmp rax, ENTER_KEY
+    jnz .wait_for_valid_input
+
+    ret
+
+tear_down:
+    ; Tear down 
+    call restore_Termios                ; return to normal input mode
+    call return_to_terminal             ; return to Terminal we called from
+    call render_frame                   ; final render of our escape codes
+    call sys_exit                       ; clean exit with code 0
+
+print_sequencer_frame:
+
+    push r14
+    push r15
+    call get_window_size
+    movzx r14d, word [winsize]          ; ws_row (height)
+    movzx r15d, word [winsize + 2]      ; ws_col (width)
+    sub r14d, 2
+    sub r15d, 37
+    shr r14d, 1                         ; divide by 2
+    shr r15d, 1
+
+    inc r14d
+    inc r15d
+
+    mov rdi, r14
+    mov rsi, r15
+    call append_position
+
+    mov rdi, TOP_BORDER
+    mov rsi, TOP_BORDER_LEN
+    call append_to_frame_buffer
+
+    mov r11, 4
+
+.middle_print:
+    inc r14
+    mov rdi, r14
+    mov rsi, r15
+    call append_position
+
+    mov rdi, MIDDLE_PART
+    mov rsi, MIDDLE_PART_LEN
+    call append_to_frame_buffer
+
+    dec r11
+    jnz .middle_print
+
+    inc r14
+    mov rdi, r14
+    mov rsi, r15
+    call append_position
+
+    mov rdi, BOT_BORDER
+    mov rsi, BOT_BORDER_LEN
+    call append_to_frame_buffer
+
+    pop r15
+    pop r14
+
+    ret
