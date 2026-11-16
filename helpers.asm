@@ -60,9 +60,15 @@ print:
     syscall
     ret
 
-
-; leverage raw mode to read 1 byte into the stack and from stack into xxx
-wait_for_return:
+; wait_for_return
+; leverage raw mode to read 1 byte into the stack and from stack into rax
+;   Args: 
+;       __none
+;   Returns:
+;       __rax: Byte that was read in IO
+;   IO:
+;       reads one byte of keaboard input (one key)
+read_key:
 
 .loop_until_q_or_interrupt:
     mov rax, 0              ; syscall read

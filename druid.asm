@@ -126,23 +126,30 @@ section .text
 
     global _start
 
+
+; ====================================================================
+; =============================[START]================================
+; ====================================================================
 _start:
     
+
+    ; setup
     lea rax, [framebuffer]              ; move mem location of framebuffer
     mov [framecursor], rax              ; into framecursor
     call enter_alt_screen
     call raw_mode_Termios
     call print_druid_ascii
-    call hide_cursor
+
+.main_loop:
     call render_frame
-    call wait_for_return
+    call read_key
 
 
-    ; Tear down of raw input and alt Terminal
-    call restore_Termios
-    call return_to_terminal
-    call render_frame
-    call sys_exit
+    ; Tear down 
+    call restore_Termios                ; return to normal input mode
+    call return_to_terminal             ; return to Terminal we called from
+    call render_frame                   ; final render of our escape codes
+    call sys_exit                       ; clean exit with code 0
 
 
 %include "helpers.asm"
@@ -209,6 +216,7 @@ print_druid_ascii:
     mov rdi, STARTER_TXT
     mov rsi, STARTER_TXT_LEN
     call append_to_frame_buffer
+    call hide_cursor
 
     pop r15
     pop r14
@@ -306,6 +314,8 @@ error_out:
         ;TODO - keep track of what what program state we're in, how much cleanup needs to happen before exit!
     ; clean up
     call restore_Termios
+
+error_out_Termios_fail:
     call return_to_terminal
     call render_frame
     mov rax, SYS_EXIT
@@ -325,7 +335,7 @@ get_Termios_state:
 
     ; see if error occurred in syscall
     cmp rax, 0
-    jl error_out
+    jl error_out_Termios_fail
 
     ; copy over to raw_termios
     mov rsi, orig_termios
@@ -349,7 +359,7 @@ set_Termios_state:
     syscall
 
     cmp rax, 0 
-    jl error_out
+    jl error_out_Termios_fail
 
     ret 
 
