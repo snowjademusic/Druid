@@ -81,9 +81,9 @@ read_key:
     cmp rax, 0              ; error occured?
     jle error_out
 
-    movzx rax, byte [rsp]       ; write the revieved byte into rax lowest byte
+    ; movzx rax, byte [rsp]       ; write the revieved byte into rax lowest byte
 
-    pop rdi                     ; return the stack pointer back
+    pop rax                     ; return the stack pointer back
     cmp rax, ENTER_KEY
     jz .quit
 
