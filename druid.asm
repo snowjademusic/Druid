@@ -159,6 +159,17 @@ section .data
 
     NUM_CHANNELS equ 4
 
+    ;   struct pollfd {
+    ;       int fd;             ; file descriptor
+    ;       short events;       ; requested events
+    ;       short revents;      ; returned events
+    ;}
+    pollfd: istruc poll
+        at .fd, dd 0
+        at .events, dw 0
+        at .revents, dw 0
+    iend
+
 section .bss
     ; struct winsize {
     ;     unsigned short ws_row;    ; 2 bytes

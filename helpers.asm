@@ -85,6 +85,14 @@ read_key:
     pop rax                 ; revert the stack pointer back
     ret                     ; return with byte loaded in rax 
 
+poll_key:
+    mov rax, 7              ; sys_poll(struct pollfd *fds, nfds_t nfds, int timeout)
+    mov rdi, pollfd         ; pointer to pollfd struct
+    mov rsi, 1              ; number of file descriptors
+    mov rdx, -1             ; timeout (negative means infinite)
+    syscall                 ; returns amount of elements read into pollfd.revents
+
+
 ;enter_alt_screen
 ;   doesn't take args
 enter_alt_screen:
