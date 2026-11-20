@@ -85,18 +85,6 @@ section .rodata
         db TopRight, 0x1b, "[0m"
     TOP_BORDER_LEN equ $ - TOP_BORDER
 
-    MIDDLE_PART:
-        db Vertical
-        db "        "
-        db Vertical
-        db "        "
-        db Vertical
-        db "        "
-        db Vertical
-        db "        "
-        db Vertical
-    MIDDLE_PART_LEN equ $ - MIDDLE_PART
-
     ; Bottom border: ╰────────┴────────┴────────┴────────╯
     BOT_BORDER:
         db BottomLeft
@@ -112,6 +100,9 @@ section .rodata
 
     CLEAR_TERMINAL db 0x1b, "[2J"
     CLEAR_TERMINAL_LEN equ $ - CLEAR_TERMINAL
+
+    CLEAR_FROM_CURSOR_ONWARD db 0x1b, "[0J"
+    CLEAR_FROM_CURSOR_ONWARD_LEN equ $ - CLEAR_FROM_CURSOR_ONWARD
 
     MOVE_CURSOR_0_0_TXT db 0x1b, "[1;1H"
     MOVE_CURSOR_0_0_TXT_LEN equ $ - MOVE_CURSOR_0_0_TXT
@@ -142,10 +133,32 @@ section .rodata
     TERMINAL_TOO_SMALL db "Terminal size too small"
     TERMINAL_TOO_SMALL_LEN equ $ - TERMINAL_TOO_SMALL
 
+    VERTICAL db "│"
+    VERTICAL_LEN equ $ - VERTICAL
+
     ANSI_ESCAPE_OPEN db 0x1b, "["
     SEMICOLON db ";"
     ANSI_CURSOR_END db "H"
+    SCROLL_DOWN_END db "S" 
+
+    incbin "kick.raw"
+
+section .data
+
+    KICK_STATE times 4 db "X       "
+    KICK_STATE_LEN equ $ - KICK_STATE
     
+    SNARE_STATE times 2 db "        X       "
+    SNARE_STATE_LEN equ $ - SNARE_STATE
+
+    HAT_STATE times 4 db "    X   "
+    HAT_STATE_LEN equ $ - HAT_STATE
+
+    PERCUSSION_STATE db "                      X   X     "
+    PERCUSSION_STATE_LEN equ $ - PERCUSSION_STATE
+
+    NUM_CHANNELS equ 4
+
 section .bss
     ; struct winsize {
     ;     unsigned short ws_row;    ; 2 bytes
@@ -154,6 +167,9 @@ section .bss
     ;     unsigned short ws_ypixel; ; 2 bytes (unused by most terminals)
     ; };
     winsize resw 4
+
+    cursor_x_position resb 8
+    cursor_y_position resb 8
 
     ; struct termios{
     ; offset	size	field
@@ -168,10 +184,10 @@ section .bss
     orig_termios resb 36
     TERMIOS_LEN equ 36
 
-    kick_state resb 16
-    snare_state resb 16
-    hat_state resb 16
-    percussion_state resb 16
+    ; kick_state resb 16
+    ; snare_state resb 16
+    ; hat_state resb 16
+    ; percussion_state resb 16
 
     framebuffer resb 30000          ; biggest Terminal size i tested on was 400x60, so I added some safty margin if I ever want to print to the whole screen
     framecursor resq 1              ;should hold the current address of where to write next
@@ -195,9 +211,9 @@ _start:
     call print_title_screen             ; TODO add info on programm usage below the art maybe? only once core features are implemented
     call render_frame
     call key_handler_title_screen       ; continues on enter; exits upon ctrl-c
-    call print_sequencer_frame
 
 .main_loop:
+    call print_sequencer_frame
     call render_frame
     call key_handler
     jmp .main_loop
@@ -212,6 +228,7 @@ _start:
 %include "helpers.asm"
 
 render_frame:
+
     lea rsi, [framebuffer]
     mov rax, [framecursor]
     sub rax, rsi
@@ -221,6 +238,10 @@ render_frame:
     ;reset framecursor
     lea rax, [framebuffer]              ; move mem location of framebuffer
     mov [framecursor], rax              ; into framecursor
+
+    mov rdi, CLEAR_TERMINAL
+    mov rsi, CLEAR_TERMINAL_LEN
+    call append_to_frame_buffer
 
     ret
 
@@ -273,6 +294,9 @@ print_title_screen:
     mov rsi, STARTER_TXT_LEN
     call append_to_frame_buffer
     call hide_cursor
+
+    mov [cursor_y_position], r14
+    mov [cursor_x_position], r15
 
     pop r15
     pop r14
@@ -345,6 +369,30 @@ append_to_frame_buffer:
     rep movsb
 
     mov [framecursor], rdi
+    ret
+
+; scroll_down:
+; scrolls down the terminal by amount of lines in rdi
+;   Args:
+;       __rdi: how many lines to scroll
+;   Clobbers:
+;       rax, rcx, rsi, rdi, rdx, r9, r10
+scroll_down:
+    mov rcx, [framecursor]
+    mov ax, [ANSI_ESCAPE_OPEN]      ; add the begin sequence ESC[
+    mov [rcx], ax
+    add rcx, 2
+
+    mov rsi, rcx
+    call write_int_as_str           ; edi once again holds the number already
+    add rcx, rax
+
+    mov r9b, [SCROLL_DOWN_END]      ; add end sequence
+    mov [rcx], r9b
+    inc rcx
+
+    mov [framecursor], rcx
+
     ret
 
 hide_cursor:
@@ -455,7 +503,6 @@ restore_Termios:
 key_handler:
 
     call read_key                       ; returns read byte in rax
-    mov rdi, rax
 
     cmp rax, KEYBOARD_INTERRUPT
     jz tear_down
@@ -484,18 +531,20 @@ tear_down:
 
 print_sequencer_frame:
 
+    push r12
+    push r13
     push r14
     push r15
     call get_window_size
     movzx r14d, word [winsize]          ; ws_row (height)
     movzx r15d, word [winsize + 2]      ; ws_col (width)
-    sub r14d, 2
+    ; sub r14d, 2
     sub r15d, 37
     shr r14d, 1                         ; divide by 2
     shr r15d, 1
 
-    inc r14d
-    inc r15d
+    ; mov r14, [cursor_y_position]
+    ; mov r15, [cursor_x_position]
 
     mov rdi, r14
     mov rsi, r15
@@ -505,7 +554,8 @@ print_sequencer_frame:
     mov rsi, TOP_BORDER_LEN
     call append_to_frame_buffer
 
-    mov r11, 4
+    mov r11, NUM_CHANNELS               ; loop for all channels
+    mov r13, KICK_STATE
 
 .middle_print:
     inc r14
@@ -513,8 +563,25 @@ print_sequencer_frame:
     mov rsi, r15
     call append_position
 
-    mov rdi, MIDDLE_PART
-    mov rsi, MIDDLE_PART_LEN
+    mov r12, 4                          ; print 1 bar per loop, loop 4 times
+
+.bar_loop:
+
+    mov rdi, VERTICAL
+    mov rsi, VERTICAL_LEN
+    call append_to_frame_buffer
+    
+    mov rdi, r13
+    mov rsi, 8                          ; print 1 bar
+    call append_to_frame_buffer
+
+    add r13, 8                          ; put cursor 1 bar ahead
+
+    dec r12                             ; looped through the state
+    jnz .bar_loop
+
+    mov rdi, VERTICAL
+    mov rsi, VERTICAL_LEN
     call append_to_frame_buffer
 
     dec r11
@@ -531,5 +598,7 @@ print_sequencer_frame:
 
     pop r15
     pop r14
+    pop r13
+    pop r12
 
     ret
