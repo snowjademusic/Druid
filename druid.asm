@@ -27,6 +27,11 @@ section .rodata
     ENTER_KEY equ 0xd
     KEYBOARD_INTERRUPT equ 0x03
 
+    UP_ARROW_KEY equ 65
+    DOWN_ARROW_KEY equ 66
+    RIGHT_ARROW_KEY equ 67
+    LEFT_ARROW_KEY equ 68
+
     VTIME_IDX equ 5
     VMIN_IDX equ 6
 
@@ -143,6 +148,12 @@ section .rodata
 
     incbin "kick.raw"
 
+    SEQUENCER_CURSOR_HIGHLIGHT_START db 0x1b, "[107m"
+    SEQUENCER_CURSOR_HIGHLIGHT_START_LEN equ $ -  SEQUENCER_CURSOR_HIGHLIGHT_START
+
+    RESET_TXT db 0x1b, "[0m"
+    RESET_TXT_LEN equ $ - RESET_TXT
+
 section .data
 
     KICK_STATE times 4 db "X       "
@@ -159,14 +170,25 @@ section .data
 
     NUM_CHANNELS equ 4
 
+    Sequencer_cursor dq 0
+    MAX_SEQUENCER_CURSOR equ NUM_CHANNELS * 32
+
+    POLLIN equ 0x0001
     ;   struct pollfd {
     ;       int fd;             ; file descriptor
     ;       short events;       ; requested events
     ;       short revents;      ; returned events
     ;}
-    pollfd: istruc poll
+    struc poll
+        .fd:      resd 1
+        .events:  resw 1
+        .revents: resw 1
+    endstruc
+
+pollfd: 
+    istruc poll
         at .fd, dd 0
-        at .events, dw 0
+        at .events, dw POLLIN
         at .revents, dw 0
     iend
 
@@ -509,14 +531,80 @@ restore_Termios:
 
 
 ; key_handler
-;   Args:
-;       __rdi: none
 key_handler:
 
-    call read_key                       ; returns read byte in rax
+    ; call read_key                       ; returns read byte in rax
+
+    call poll_key
 
     cmp rax, KEYBOARD_INTERRUPT
     jz tear_down
+
+    cmp rax, UP_ARROW_KEY
+    jz .up_arrow
+
+    cmp rax, DOWN_ARROW_KEY
+    jz .down_arrow
+
+    cmp rax, RIGHT_ARROW_KEY
+    jz .right_arrow
+
+    cmp rax, LEFT_ARROW_KEY
+    jz .left_arrow
+
+    jmp .continue
+
+.up_arrow:
+
+    mov rcx, [Sequencer_cursor]
+    sub rcx, 32
+    mov [Sequencer_cursor], rcx
+    jge .continue
+
+    xor rdx, rdx
+    mov [Sequencer_cursor], rdx
+
+    jmp .continue
+
+.down_arrow:
+
+    mov rcx, [Sequencer_cursor]
+    add rcx, 32
+    mov [Sequencer_cursor], rcx
+    cmp rcx, MAX_SEQUENCER_CURSOR
+    jl .continue
+
+    mov [Sequencer_cursor], MAX_SEQUENCER_CURSOR - 1
+
+    jmp .continue
+
+.right_arrow:
+
+    mov rcx, [Sequencer_cursor]
+    add rcx, 1
+    mov [Sequencer_cursor], rcx
+    cmp rcx, MAX_SEQUENCER_CURSOR
+    jl .continue
+
+    mov [Sequencer_cursor], MAX_SEQUENCER_CURSOR - 1
+
+    jmp .continue
+
+.left_arrow:
+
+    mov rcx, [Sequencer_cursor]
+    sub rcx, 1
+    mov [Sequencer_cursor], rcx
+    jge .continue
+
+    xor rdx, rdx
+    mov [Sequencer_cursor], rdx
+
+    jmp .continue
+
+.continue:
+    call key_debug
+    
     ret
 
 key_handler_title_screen:
@@ -542,6 +630,8 @@ tear_down:
 
 print_sequencer_frame:
 
+    push rbx
+    push rbp
     push r12
     push r13
     push r14
@@ -566,7 +656,9 @@ print_sequencer_frame:
     call append_to_frame_buffer
 
     mov r11, NUM_CHANNELS               ; loop for all channels
-    mov r13, KICK_STATE
+    mov r13, KICK_STATE                 ; start with Kick state, inc through since all are initialized consecutively
+    mov rbx, [Sequencer_cursor]         ; where to print the cursor
+    mov rbp, 0                          ; increases to be compared against the cursor
 
 .middle_print:
     inc r14
@@ -574,26 +666,36 @@ print_sequencer_frame:
     mov rsi, r15
     call append_position
 
-    mov r12, 4                          ; print 1 bar per loop, loop 4 times
-
-.bar_loop:
+    mov r12, 32                          ; print 1 bar per loop, loop 4 times
 
     mov rdi, VERTICAL
     mov rsi, VERTICAL_LEN
     call append_to_frame_buffer
-    
+
+.bar_loop:
+    cmp rbp, rbx
+    jz .draw_sequencer_cursor
+
     mov rdi, r13
-    mov rsi, 8                          ; print 1 bar
+    mov rsi, 1                          ; print 1 char
     call append_to_frame_buffer
 
-    add r13, 8                          ; put cursor 1 bar ahead
+.continue_1:
+    inc r13                             ; put cursor 1 ahead
+    inc rbp
+    mov rax, rbp
+    and rax, 7                          ; easy mod 8 operation
+    jz .add_vertical_separator
+
+.continue_2:
+
 
     dec r12                             ; looped through the state
     jnz .bar_loop
 
-    mov rdi, VERTICAL
-    mov rsi, VERTICAL_LEN
-    call append_to_frame_buffer
+    ; mov rdi, VERTICAL
+    ; mov rsi, VERTICAL_LEN
+    ; call append_to_frame_buffer
 
     dec r11
     jnz .middle_print
@@ -611,5 +713,29 @@ print_sequencer_frame:
     pop r14
     pop r13
     pop r12
+    pop rbp
+    pop rbx
 
     ret
+
+.add_vertical_separator:
+    mov rdi, VERTICAL
+    mov rsi, VERTICAL_LEN
+    call append_to_frame_buffer
+
+    jmp .continue_2
+
+.draw_sequencer_cursor:
+    mov rdi, SEQUENCER_CURSOR_HIGHLIGHT_START
+    mov rsi, SEQUENCER_CURSOR_HIGHLIGHT_START_LEN
+    call append_to_frame_buffer
+
+    mov rdi, r13
+    mov rsi, 1                          ; print 1 char
+    call append_to_frame_buffer
+
+    mov rdi, RESET_TXT
+    mov rsi, RESET_TXT_LEN
+    call append_to_frame_buffer
+
+    jmp .continue_1

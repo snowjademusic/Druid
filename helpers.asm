@@ -85,14 +85,50 @@ read_key:
     pop rax                 ; revert the stack pointer back
     ret                     ; return with byte loaded in rax 
 
+
+; poll_key:
+; polls for a key, so it doesn't block and wait for input
+;   Returns:
+;       __rax: 0 if no key was pressed, otherwise the byte read from stdin
 poll_key:
-    mov rax, 7              ; sys_poll(struct pollfd *fds, nfds_t nfds, int timeout)
-    mov rdi, pollfd         ; pointer to pollfd struct
-    mov rsi, 1              ; number of file descriptors
-    mov rdx, -1             ; timeout (negative means infinite)
-    syscall                 ; returns amount of elements read into pollfd.revents
+    mov word [pollfd + poll.revents], 0     ; clear previous revents
 
+    mov rax, 7                              ; sys_poll(struct pollfd *fds, nfds_t nfds, int timeout)
+    mov rdi, pollfd                         ; pointer to pollfd struct
+    mov rsi, 1                              ; number of file descriptors
+    mov rdx, -1                              ; (timeout = 0 is non-blocking; use e.g. 16 for 16ms)
+    syscall                                 ; returns amount of elements read into pollfd.revents
 
+    cmp rax, 0                              ; error occured?
+    jl error_out
+    je .no_input
+
+    test word [pollfd + poll.revents], POLLIN
+    jz .no_input
+
+    call read_key
+    ret
+
+.no_input:
+    xor eax, eax
+
+    ret
+
+; key_debug:
+; takes the bytes in rax and writes them to the buffer
+key_debug:
+    
+    push 0
+    mov rdi, rax
+    mov rsi, rsp
+    call write_int_as_str
+
+    mov rdi, rsp
+    mov rsi, rax
+    call append_to_frame_buffer
+
+    pop rax
+    ret
 ;enter_alt_screen
 ;   doesn't take args
 enter_alt_screen:
