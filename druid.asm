@@ -540,6 +540,9 @@ key_handler:
     cmp rax, KEYBOARD_INTERRUPT
     jz tear_down
 
+    cmp rax, ENTER_KEY
+    jz .enter_key
+
     cmp rax, UP_ARROW_KEY
     jz .up_arrow
 
@@ -552,6 +555,24 @@ key_handler:
     cmp rax, LEFT_ARROW_KEY
     jz .left_arrow
 
+    jmp .continue
+
+
+.enter_key:
+    
+    mov rcx, KICK_STATE
+    add rcx, [Sequencer_cursor]
+    movzx rdx, byte [rcx]
+
+    cmp rdx, byte "X"
+    jz .x_was_there
+
+    mov [rcx], byte "X"
+
+    jmp .continue
+
+.x_was_there:
+    mov [rcx], byte " "
     jmp .continue
 
 .up_arrow:
