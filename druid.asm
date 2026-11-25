@@ -32,6 +32,11 @@ section .rodata
     RIGHT_ARROW_KEY equ 67
     LEFT_ARROW_KEY equ 68
 
+    W_KEY equ 119
+    S_KEY equ 115
+    D_KEY equ 100
+    A_KEY equ 97
+
     VTIME_IDX equ 5
     VMIN_IDX equ 6
 
@@ -546,13 +551,25 @@ key_handler:
     cmp rax, UP_ARROW_KEY
     jz .up_arrow
 
+    cmp rax, W_KEY
+    jz .up_arrow
+
     cmp rax, DOWN_ARROW_KEY
+    jz .down_arrow
+
+    cmp rax, S_KEY
     jz .down_arrow
 
     cmp rax, RIGHT_ARROW_KEY
     jz .right_arrow
 
+    cmp rax, D_KEY
+    jz .right_arrow
+
     cmp rax, LEFT_ARROW_KEY
+    jz .left_arrow
+
+    cmp rax, A_KEY
     jz .left_arrow
 
     jmp .continue
