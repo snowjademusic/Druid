@@ -96,7 +96,7 @@ poll_key:
     mov rax, 7                              ; sys_poll(struct pollfd *fds, nfds_t nfds, int timeout)
     mov rdi, pollfd                         ; pointer to pollfd struct
     mov rsi, 1                              ; number of file descriptors
-    mov rdx, -1                              ; (timeout = 0 is non-blocking; use e.g. 16 for 16ms)
+    mov rdx, 60                              ; (timeout = 0 is non-blocking; use e.g. 16 for 16ms)
     syscall                                 ; returns amount of elements read into pollfd.revents
 
     cmp rax, 0                              ; error occured?

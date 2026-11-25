@@ -153,13 +153,24 @@ section .rodata
 
     incbin "kick.raw"
 
-    SEQUENCER_CURSOR_HIGHLIGHT_START db 0x1b, "[107m"
+    SEQUENCER_CURSOR_HIGHLIGHT_START db 0x1b, "[48;5;231m", 0x1b, "[30m"
     SEQUENCER_CURSOR_HIGHLIGHT_START_LEN equ $ -  SEQUENCER_CURSOR_HIGHLIGHT_START
+
+    PLAYER_HIGHLIGHT_START db 0x1b, "[48;5;240m",
+    PLAYER_HIGHLIGHT_START_LEN equ $ - PLAYER_HIGHLIGHT_START
 
     RESET_TXT db 0x1b, "[0m"
     RESET_TXT_LEN equ $ - RESET_TXT
 
+    BPM_TO_STEPSIZE_CONSTANT equ 7500                   ; with 8 steps per beat, we take 60000ms / 8 to get the ms per bpm -> divide by BPM to get the ms per step
+
 section .data
+
+    playing db 0
+
+    BPM dq 125
+
+    playhead dq 0
 
     KICK_STATE times 4 db "X       "
     KICK_STATE_LEN equ $ - KICK_STATE
@@ -177,6 +188,8 @@ section .data
 
     Sequencer_cursor dq 0
     MAX_SEQUENCER_CURSOR equ NUM_CHANNELS * 32
+
+    PLAYHEAD dq 0
 
     POLLIN equ 0x0001
     ;   struct pollfd {
@@ -251,7 +264,7 @@ _start:
     call key_handler_title_screen       ; continues on enter; exits upon ctrl-c
 
 .main_loop:
-    call print_sequencer_frame
+    call sequencer_logic
     call render_frame
     call key_handler
     jmp .main_loop
@@ -538,9 +551,12 @@ restore_Termios:
 ; key_handler
 key_handler:
 
-    ; call read_key                       ; returns read byte in rax
+    ; call read_key                         ; returns read byte in rax
 
     call poll_key
+
+    test rax, rax                           ; check if 0 was returned
+    jz .cursor_advance
 
     cmp rax, KEYBOARD_INTERRUPT
     jz tear_down
@@ -574,6 +590,16 @@ key_handler:
 
     jmp .continue
 
+.cursor_advance:
+
+    inc qword [playhead]
+    mov rcx, [playhead]
+    cmp rcx, qword 32               ; see if we're greater than 32(entire bar size)
+    jl .continue
+
+    mov [playhead], qword 0
+
+    jmp .continue
 
 .enter_key:
     
@@ -589,6 +615,7 @@ key_handler:
     jmp .continue
 
 .x_was_there:
+
     mov [rcx], byte " "
     jmp .continue
 
@@ -612,7 +639,7 @@ key_handler:
     cmp rcx, MAX_SEQUENCER_CURSOR
     jl .continue
 
-    mov [Sequencer_cursor], MAX_SEQUENCER_CURSOR - 1
+    mov [Sequencer_cursor], qword MAX_SEQUENCER_CURSOR - 1
 
     jmp .continue
 
@@ -624,7 +651,7 @@ key_handler:
     cmp rcx, MAX_SEQUENCER_CURSOR
     jl .continue
 
-    mov [Sequencer_cursor], MAX_SEQUENCER_CURSOR - 1
+    mov [Sequencer_cursor], qword MAX_SEQUENCER_CURSOR - 1
 
     jmp .continue
 
@@ -641,6 +668,7 @@ key_handler:
     jmp .continue
 
 .continue:
+
     call key_debug
     
     ret
@@ -666,7 +694,7 @@ tear_down:
     call render_frame                   ; final render of our escape codes
     call sys_exit                       ; clean exit with code 0
 
-print_sequencer_frame:
+sequencer_logic:
 
     push rbx
     push rbp
@@ -694,7 +722,7 @@ print_sequencer_frame:
     call append_to_frame_buffer
 
     mov r11, NUM_CHANNELS               ; loop for all channels
-    mov r13, KICK_STATE                 ; start with Kick state, inc through since all are initialized consecutively
+    mov r13, KICK_STATE                 ; start with Kick state, inc through since all are initialized consecutively/ contiguously
     mov rbx, [Sequencer_cursor]         ; where to print the cursor
     mov rbp, 0                          ; increases to be compared against the cursor
 
@@ -711,8 +739,14 @@ print_sequencer_frame:
     call append_to_frame_buffer
 
 .bar_loop:
-    cmp rbp, rbx
+    cmp rbp, rbx                        ; is the cursor here?
     jz .draw_sequencer_cursor
+
+    mov rax, rbp
+    and rax, 32
+    cmp rax, [playhead]
+    jz .draw_playhead
+    ; TODO fix logic, currently broken
 
     mov rdi, r13
     mov rsi, 1                          ; print 1 char
@@ -766,6 +800,22 @@ print_sequencer_frame:
 .draw_sequencer_cursor:
     mov rdi, SEQUENCER_CURSOR_HIGHLIGHT_START
     mov rsi, SEQUENCER_CURSOR_HIGHLIGHT_START_LEN
+    call append_to_frame_buffer
+
+    mov rdi, r13
+    mov rsi, 1                          ; print 1 char
+    call append_to_frame_buffer
+
+    mov rdi, RESET_TXT
+    mov rsi, RESET_TXT_LEN
+    call append_to_frame_buffer
+
+    jmp .continue_1
+
+.draw_playhead:
+
+    mov rdi, PLAYER_HIGHLIGHT_START
+    mov rsi, PLAYER_HIGHLIGHT_START_LEN
     call append_to_frame_buffer
 
     mov rdi, r13
