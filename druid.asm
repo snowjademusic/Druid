@@ -27,6 +27,8 @@ section .rodata
     ENTER_KEY equ 0xd
     KEYBOARD_INTERRUPT equ 0x03
 
+    SPACE_BAR_KEY equ 32
+
     UP_ARROW_KEY equ 65
     DOWN_ARROW_KEY equ 66
     RIGHT_ARROW_KEY equ 67
@@ -156,7 +158,7 @@ section .rodata
     SEQUENCER_CURSOR_HIGHLIGHT_START db 0x1b, "[48;5;231m", 0x1b, "[30m"
     SEQUENCER_CURSOR_HIGHLIGHT_START_LEN equ $ -  SEQUENCER_CURSOR_HIGHLIGHT_START
 
-    PLAYER_HIGHLIGHT_START db 0x1b, "[48;5;240m",
+    PLAYER_HIGHLIGHT_START db 0x1b, "[48;5;232m",
     PLAYER_HIGHLIGHT_START_LEN equ $ - PLAYER_HIGHLIGHT_START
 
     RESET_TXT db 0x1b, "[0m"
@@ -564,6 +566,9 @@ key_handler:
     cmp rax, ENTER_KEY
     jz .enter_key
 
+    cmp rax, SPACE_BAR_KEY
+    jz .space_bar
+
     cmp rax, UP_ARROW_KEY
     jz .up_arrow
 
@@ -587,6 +592,23 @@ key_handler:
 
     cmp rax, A_KEY
     jz .left_arrow
+
+    jmp .continue
+
+
+.space_bar:
+    
+    movzx rcx, byte [playing]
+    test rcx, rcx
+    jz .playing_is_0
+
+    mov [playing], byte 0
+
+    jmp .continue
+
+.playing_is_0:
+    mov [playing], byte 1
+    mov [playhead], qword 0
 
     jmp .continue
 
@@ -743,10 +765,13 @@ sequencer_logic:
     jz .draw_sequencer_cursor
 
     mov rax, rbp
-    and rax, 32
+    and rax, 31
     cmp rax, [playhead]
     jz .draw_playhead
     ; TODO fix logic, currently broken
+
+
+.continue_0:
 
     mov rdi, r13
     mov rsi, 1                          ; print 1 char
@@ -813,6 +838,10 @@ sequencer_logic:
     jmp .continue_1
 
 .draw_playhead:
+
+    movzx rax, byte [playing]
+    test rax, rax
+    jz .continue_0
 
     mov rdi, PLAYER_HIGHLIGHT_START
     mov rsi, PLAYER_HIGHLIGHT_START_LEN
