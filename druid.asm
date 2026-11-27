@@ -183,7 +183,7 @@ section .data
     HAT_STATE times 4 db "    X   "
     HAT_STATE_LEN equ $ - HAT_STATE
 
-    PERCUSSION_STATE db "                      X   X     "
+    PERCUSSION_STATE db "                      X     X   "
     PERCUSSION_STATE_LEN equ $ - PERCUSSION_STATE
 
     NUM_CHANNELS equ 4
@@ -558,7 +558,7 @@ key_handler:
     call poll_key
 
     test rax, rax                           ; check if 0 was returned
-    jz .cursor_advance
+    jz .playhead_advance
 
     cmp rax, KEYBOARD_INTERRUPT
     jz tear_down
@@ -612,7 +612,7 @@ key_handler:
 
     jmp .continue
 
-.cursor_advance:
+.playhead_advance:
 
     inc qword [playhead]
     mov rcx, [playhead]
@@ -856,3 +856,8 @@ sequencer_logic:
     call append_to_frame_buffer
 
     jmp .continue_1
+
+
+; play_sound
+; calls an execve
+play_sound:
