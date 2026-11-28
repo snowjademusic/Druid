@@ -39,6 +39,11 @@ section .rodata
     D_KEY equ 100
     A_KEY equ 97
 
+    K_KEY equ 107
+    C_KEY equ 99
+    H_KEY equ 104
+    V_KEY equ 118
+
     VTIME_IDX equ 5
     VMIN_IDX equ 6
 
@@ -166,6 +171,18 @@ section .rodata
 
     BPM_TO_STEPSIZE_CONSTANT equ 7500                   ; with 8 steps per beat, we take 60000ms / 8 to get the ms per bpm -> divide by BPM to get the ms per step
 
+    sound_command db "/usr/bin/pw-play", 0
+
+    kick_str db "kick.wav", 0
+    clap_str db "clap.wav", 0
+    hat_str db "hat.wav", 0
+    perc_str db "perc.wav", 0
+
+    kick_argv dq sound_command, kick_str, 0
+    clap_argv dq sound_command, clap_str, 0
+    hat_argv  dq sound_command, hat_str, 0
+    perc_argv dq sound_command, perc_str, 0
+
 section .data
 
     playing db 0
@@ -183,7 +200,7 @@ section .data
     HAT_STATE times 4 db "    X   "
     HAT_STATE_LEN equ $ - HAT_STATE
 
-    PERCUSSION_STATE db "                      X     X   "
+    PERCUSSION_STATE db "                      X   X     "
     PERCUSSION_STATE_LEN equ $ - PERCUSSION_STATE
 
     NUM_CHANNELS equ 4
@@ -245,6 +262,7 @@ section .bss
     framebuffer resb 30000          ; biggest Terminal size i tested on was 400x60, so I added some safty margin if I ever want to print to the whole screen
     framecursor resq 1              ;should hold the current address of where to write next
 
+    envp_ptr resq 1
 section .text
 
     global _start
@@ -254,7 +272,9 @@ section .text
 ; =============================[START]================================
 ; ====================================================================
 _start:
-    
+    mov rax, [rsp]                  ; argc
+    lea rdx, [rsp + rax*8 + 16]     ; skip argc (8) + argv[0..argc-1] (rax*8) + NULL (8)
+    mov [envp_ptr], rdx             
 
     ; setup
     lea rax, [framebuffer]              ; move mem location of framebuffer
@@ -593,6 +613,18 @@ key_handler:
     cmp rax, A_KEY
     jz .left_arrow
 
+    cmp rax, K_KEY
+    jz .kick_sound
+
+    cmp rax, C_KEY
+    jz .clap_sound
+
+    cmp rax, H_KEY
+    jz .hat_sound
+
+    cmp rax, V_KEY
+    jz .perc_sound
+
     jmp .continue
 
 
@@ -687,6 +719,38 @@ key_handler:
     xor rdx, rdx
     mov [Sequencer_cursor], rdx
 
+    jmp .continue
+
+.kick_sound:
+
+    push rax
+    mov rdi, 1                          ; channel number for kick
+    call play_sound
+    pop rax
+    jmp .continue
+
+.clap_sound:
+
+    push rax
+    mov rdi, 2                          ; channel number for kick
+    call play_sound
+    pop rax
+    jmp .continue
+
+.hat_sound:
+
+    push rax
+    mov rdi, 3                          ; channel number for kick
+    call play_sound
+    pop rax
+    jmp .continue
+
+.perc_sound:
+
+    push rax
+    mov rdi, 4                          ; channel number for kick
+    call play_sound
+    pop rax
     jmp .continue
 
 .continue:
@@ -859,5 +923,65 @@ sequencer_logic:
 
 
 ; play_sound
-; calls an execve
+; calls an execve with the command to play a sound file
+; Args:
+;   __rdi: channel number to play sound for [1: Kick, 2: Snare, 3: Hat, 4: Percussion]
 play_sound:
+
+    cmp rdi, 1
+    jz .play_kick
+
+    cmp rdi, 2
+    jz .play_snare
+
+    cmp rdi, 3
+    jz .play_hat
+
+    cmp rdi, 4
+    jz .play_percussion
+
+
+.play_kick:
+    mov rsi , kick_argv
+    jmp .continue_play_sound
+
+.play_snare:
+    mov rsi, clap_argv
+    jmp .continue_play_sound   
+
+.play_hat:
+    mov rsi, hat_argv
+    jmp .continue_play_sound
+
+.play_percussion:
+    mov rsi, perc_argv
+    jmp .continue_play_sound
+
+
+.continue_play_sound:
+
+    push rsi                    ; save argv pointer across fork
+
+    mov rax, 57                 ; SYS_FORK
+    syscall
+
+    pop rsi                     ; restore argv pointer
+
+    test rax, rax
+    js .fork_failed             ; rax < 0 means error
+    jnz .parent_return          ; rax > 0 means we are in the parent process
+
+    ; EXECVE ARGS
+    mov rax, 59                         ; syscall number for execve
+    mov rdi, sound_command              ; pointer to command string
+    mov rdx, [envp_ptr]                 ; envp = NULL
+    syscall
+
+    ; If execve fails, exit child immediately so it doesn't run the parent's UI loop!
+    mov rax, 60                 ; SYS_EXIT
+    mov rdi, 1
+    syscall
+
+.fork_failed:
+.parent_return:
+    ret
